@@ -1,0 +1,54 @@
+extends Node
+
+var note_titles: Array[String] = []
+var note_contents: Array[String] = []
+var number_of_entries:int
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	# Initialize with empty strings
+	for i in range(16):
+		note_titles.append("")
+		note_contents.append("")
+		
+	load_notes_from_file()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+#func _process(delta: float) -> void:
+	#pass
+
+func save_notes_to_file():
+	var data = {
+		"titles": note_titles,
+		"contents": note_contents,
+		"entry_count": number_of_entries,
+		}
+
+	var file = FileAccess.open("user://notes_data.json", FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(data))
+		file.close()
+		
+		
+func load_notes_from_file():
+	if FileAccess.file_exists("user://notes_data.json"):
+		var file = FileAccess.open("user://notes_data.json", FileAccess.READ)
+		if file:
+			var json_text = file.get_as_text()
+			var parsed = JSON.parse_string(json_text)
+			if parsed != null:
+				var raw_titles = parsed.get("titles", [])
+				var raw_contents = parsed.get("contents", [])
+
+				note_titles.clear()
+				note_contents.clear()
+
+				for title in raw_titles:
+					note_titles.append(str(title))
+
+				for content in raw_contents:
+					note_contents.append(str(content))
+					
+				number_of_entries = int(parsed.get("entry_count", 0))
+				
+				file.close()
