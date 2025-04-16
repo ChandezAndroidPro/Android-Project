@@ -1,0 +1,103 @@
+extends Control
+
+@onready var entry_scene:PackedScene = preload("res://Scenes/entry.tscn")
+@onready var notes_list: VBoxContainer = $notes_space/ScrollContainer/notes_list
+@onready var entry_no_lbl: Label = $notes_space/entry_no_lbl
+@onready var index_lbl: Label = $editing_work_space/top_bar/index_lbl
+@onready var scroll_container: ScrollContainer = $notes_space/ScrollContainer
+@onready var vert_slider: VSlider = $notes_space/VSlider
+
+var number_of_notes:int
+var added_notes:int = 0
+
+@onready var change_screen_anim: AnimationPlayer = $change_screen_anim
+@onready var popup_anim: AnimationPlayer = $editing_work_space/Popup/popup_anim
+
+var index_of_note_being_edited:int
+
+@onready var title_edit: TextEdit = $editing_work_space/content_space/Title_edit
+@onready var content_edit: TextEdit = $editing_work_space/content_space/content_edit
+
+@onready var save_changes_btn_parent:Control = $editing_work_space/save_cont
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	add_saved_entries()
+	
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(_delta: float) -> void:
+	number_of_notes = notes_list.get_child_count()
+	entry_no_lbl.text = "Notes :" + str(number_of_notes)
+	index_lbl.text ="Note :" + str(index_of_note_being_edited)
+	
+	scroll_container.get_v_scroll_bar().hide()
+	vert_slider.max_value = scroll_container.get_v_scroll_bar().max_value
+	vert_slider.min_value = scroll_container.get_v_scroll_bar().min_value
+	scroll_container.get_v_scroll_bar().value = vert_slider.value
+	
+	if title_edit.text != GlobalEditor.note_titles[index_of_note_being_edited] or content_edit.text != GlobalEditor.note_contents[index_of_note_being_edited]:
+		save_changes_btn_parent.show()
+	else:
+		save_changes_btn_parent.hide()
+
+func add_saved_entries():
+	var e = entry_scene.instantiate()
+	notes_list.add_child(e)
+	await get_tree().create_timer(.01).timeout
+	e.entry_index = number_of_notes
+	added_notes += 1
+	if added_notes < GlobalEditor.number_of_entries:
+		add_saved_entries()
+		
+
+func _on_add_entry_btn_button_up() -> void:
+	add_new_entry()
+
+func add_new_entry():
+	if number_of_notes <= 14:
+		var e = entry_scene.instantiate()
+		notes_list.add_child(e)		
+		await get_tree().create_timer(.1).timeout
+		e.entry_index = number_of_notes
+		GlobalEditor.number_of_entries = number_of_notes
+		activate_editing(number_of_notes)
+
+func activate_editing(active_index:int):
+	change_screen_anim.play("activate_editing")
+	index_of_note_being_edited = active_index
+	title_edit.text = GlobalEditor.note_titles[index_of_note_being_edited]
+	content_edit.text = GlobalEditor.note_contents[index_of_note_being_edited]
+
+func deactivate_editing():
+	change_screen_anim.play_backwards("activate_editing")
+
+func _on_back_to_list_btn_button_down() -> void:
+	if title_edit.text != GlobalEditor.note_titles[index_of_note_being_edited] or content_edit.text != GlobalEditor.note_contents[index_of_note_being_edited]:
+		popup_anim.play("popup")
+	else:
+		deactivate_editing()
+
+func _on_save_changes_btn_button_down() -> void:
+	save_changes()
+
+func save_changes():
+	GlobalEditor.note_titles[index_of_note_being_edited] = title_edit.text
+	GlobalEditor.note_contents[index_of_note_being_edited] = content_edit.text
+	GlobalEditor.save_notes_to_file()
+
+
+func _on_save_quit_btn_button_down() -> void:
+	popup_anim.play_backwards("popup")
+	save_changes()
+	deactivate_editing()
+
+func _on_cont_edit_btn_button_down() -> void:
+	popup_anim.play_backwards("popup")
+
+func _on_discard_btn_button_down() -> void:
+	popup_anim.play_backwards("popup")
+	deactivate_editing()
+
+func _on_quit_btn_button_down() -> void:
+	get_tree().quit()
