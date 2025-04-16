@@ -1,0 +1,37 @@
+extends Label
+
+@onready var home_screen: Control = $"../../../.."
+
+var entry_index:int 
+
+@onready var title_lbl = $Control/note_name
+@onready var preview_lbl:Label = $Control/note_preview
+@onready var date_lbl: Label = $Control/note_date
+@onready var time_lbl: Label = $Control/note_time_lbl
+
+
+## Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	var current_date_time = Time.get_datetime_dict_from_system()
+	var formatted_date = "%02d-%02d-%04d" % [current_date_time["day"],current_date_time["month"], current_date_time["year"]]
+	date_lbl.text = str(formatted_date)
+	
+	# For Getting The Time:
+	var time = Time.get_time_dict_from_system()
+	# we can use format strings to pad it to a length of 2 with zeros, e.g. 01:20:12
+	time_lbl.text = "%02d:%02d:%02d" % [time.hour, time.minute, time.second]
+
+#
+## Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(_delta: float) -> void:
+	
+	
+	title_lbl.text = GlobalEditor.note_titles[entry_index]
+	preview_lbl.text = GlobalEditor.note_contents[entry_index]
+	
+func set_preview_text(preview:String):
+	preview_lbl.text = preview
+
+
+func _on_note_btn_button_up() -> void:
+	home_screen.activate_editing(entry_index)
